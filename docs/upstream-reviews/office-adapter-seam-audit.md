@@ -44,6 +44,13 @@ RPC 方法面（27 个）：agents.list/create/update/delete、agents.files.get/
 - 指向 DSH：把 office 的 gateway URL 设为 `ws://127.0.0.1:<DSH端口>/api/gateway/ws`（adapter 在 DSH webserver 上注册的 exact-path upgrade 路由）；adapterType 保持非 openclaw 分支即无需 token 握手（`requiresToken = adapterType === "openclaw"`）。
 - 生产模式 `UPSTREAM_ALLOWLIST` 需含 DSH 主机名（127.0.0.1/localhost）。
 
+## 3C. todo 投影接缝（2026-09-14 审计）
+
+- DSH 真源：`TodoItem {content, status: pending|in_progress|completed}`；Agent 经 dsh-tool-todo 以 `todo/write` 事件**全列表替换**写会话日志（last-write-wins，无稳定 id）。
+- Office 契约：`tasks.list {includeArchived}` → `{tasks: GatewayTaskRecord[]}`；status 联合 `todo|in_progress|blocked|review|done`；create/update 为写路径。
+- 投影（只读）：adapter 挂主机级 `session/event`，实时跟踪每会话最新 `todo/write` 快照 → tasks.list 映射 pending→todo / in_progress→in_progress / completed→done，source 固定 `openclaw_event`（事件推导卡），assignedAgentId = 会话 id。限制：adapter 重启后历史 todo/write 不可见，须等下一次写入（与 approval 桥接同源限制）。
+- `tasks.create/update` 显式 not_implemented：任务写路径归 Agent 的 todo 工具（宪法第 1 条——DSH 已有能力不重复实现；office 侧写入会伪造第二真源）。
+
 ## 4. 验收路径（Phase 3 收口）
 
 同时启动多个 DSH Agent → Office 出现多个不同真实 Agent；Agent 完成 → UI 状态同步变化。前置：adapter live + office dev server + 多会话驱动。

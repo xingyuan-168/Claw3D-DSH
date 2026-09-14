@@ -216,3 +216,28 @@ test("dispatch: exec.approval.resolve routes into the approvals bridge", async (
   assert.equal(res.ok, true);
   assert.equal(await outcomePromise, "rejected");
 });
+
+test("dispatch: todo/write events project onto tasks.list read model", async () => {
+  const { ctx } = makeCtx([{ id: "sess-t", header: { id: "sess-t" } }]);
+  const frames = [];
+  const io = createDispatch(ctx, (frame) => frames.push(frame));
+  io.onSessionEvent({ id: "sess-t" }, { type: "todo/write", todos: [
+    { content: "ship adapter", status: "completed" },
+    { content: "wire todo projection", status: "in_progress" },
+    { content: "restart DSH", status: "pending" },
+  ] });
+  const res = await io.dispatch("tasks.list", { includeArchived: false }, "t1");
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.payload.tasks.map((t) => t.status), ["done", "in_progress", "todo"]);
+  assert.ok(res.payload.tasks.every((t) => t.source === "openclaw_event" && t.assignedAgentId === "sess-t"));
+  assert.equal(res.payload.tasks[0].title, "ship adapter");
+});
+
+test("dispatch: task writes stay not_implemented (write path belongs to the agent todo tool)", async () => {
+  const { ctx } = makeCtx();
+  const io = createDispatch(ctx);
+  const created = await io.dispatch("tasks.create", { title: "x" }, "t2");
+  assert.equal(created.error.code, "not_implemented");
+  const updated = await io.dispatch("tasks.update", { id: "x", status: "done" }, "t3");
+  assert.equal(updated.error.code, "not_implemented");
+});

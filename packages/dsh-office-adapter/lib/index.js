@@ -190,6 +190,7 @@ const NOT_IMPLEMENTED = new Set([
   "models.list", "skills.status",
   "cron.list", "cron.add", "cron.run", "cron.remove",
   "sessions.list", "sessions.preview", "sessions.patch", "sessions.reset",
+  "tasks.create", "tasks.update",
   "agent.wait", "wake",
 ]);
 
@@ -206,6 +207,8 @@ export function createDispatch(ctx, broadcast = () => {}, approvals = null) {
   const activity = new Map();
   /** agentId -> pending chat run id; one ordinary follow-up at a time. */
   const pendingRuns = new Map();
+  /** agentId -> { items, updatedAt } latest todo/write whole-list snapshot (live events only). */
+  const todos = new Map();
   let chatSeq = 0;
 
   const noteActivity = (session) => {
@@ -242,6 +245,10 @@ export function createDispatch(ctx, broadcast = () => {}, approvals = null) {
 
   const onSessionEvent = (session, event) => {
     noteActivity(session);
+    if (event && event.type === "todo/write") {
+      const items = Array.isArray(event.todos) ? event.todos : (event.payload && Array.isArray(event.payload.todos) ? event.payload.todos : null);
+      if (items) todos.set(String(session.id), { items, updatedAt: Date.now() });
+    }
     const agentId = String(session.id);
     const runId = pendingRuns.get(agentId);
     const message = deriveAssistantText(event);
@@ -280,6 +287,27 @@ export function createDispatch(ctx, broadcast = () => {}, approvals = null) {
         const resolved = approvals.resolveExternal(approvalId, decision, typeof p.resolvedBy === "string" ? p.resolvedBy : null);
         if (!resolved) return resErr(id, "not_found", "no pending approval " + approvalId);
         return resOk(id, { resolved: true });
+      }
+      case "tasks.list": {
+        const tasks = [];
+        for (const session of ctx.sessions.list()) {
+          const agentId = String(session.id);
+          const entry = todos.get(agentId);
+          if (!entry) continue;
+          entry.items.forEach((item, index) => {
+            const status = item && item.status;
+            tasks.push({
+              id: agentId + "#" + index,
+              title: String((item && item.content) || ""),
+              status: status === "in_progress" ? "in_progress" : status === "completed" ? "done" : "todo",
+              source: "openclaw_event",
+              assignedAgentId: agentId,
+              createdAt: new Date(entry.updatedAt).toISOString(),
+              updatedAt: new Date(entry.updatedAt).toISOString(),
+            });
+          });
+        }
+        return resOk(id, { tasks });
       }
       case "chat.history": {
         const sessionId = typeof p.sessionId === "string" ? p.sessionId : (typeof p.agentId === "string" ? p.agentId : "");
