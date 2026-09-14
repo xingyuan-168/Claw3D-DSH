@@ -31,6 +31,13 @@ RPC 方法面（27 个）：agents.list/create/update/delete、agents.files.get/
 3. 会话/代理状态只从 sessionProjections 快照读取；审批走 approval seam；**不造模拟数据**（V4 §"不允许模拟数据假装成功"）。
 4. chat.send 的桥接属下一接缝审计（client-connection 的 channel 语义 + 会话投递 API），方法面先以 `not_implemented` 显式报错。
 
+## 3A. approval 契约实测修正（2026-09-14 深审计）
+
+- `exec.approvals.get/set` 是**每 agent 的 exec 自动批准策略配置文件**（`{path,exists,hash,file:{version:1,agents:{...security/ask/allowlist}}}`，set 带 baseHash 乐观锁）——不是交互审批队列。DSH 无同构域（其对应物是 governance policy + permission-presets），v1 保持 not_implemented，归属 Phase 8 兼容矩阵议题。
+- 交互审批走**事件对**：`exec.approval.requested {id,request:{command(必填),agentId,sessionKey,...},createdAtMs,expiresAtMs}` 与 `exec.approval.resolved {id,decision:'allow-once'|'allow-always'|'deny',resolvedBy?,ts}`；决议 RPC = `exec.approval.resolve {id,decision}`。
+- DSH 桥接：adapter 以 `approval/request` waterfall **answerer** 身份挂载（仅在 office 在线时认领，否则 next() 交给其他 answerer / fail-closed）；parked → requested 帧；resolve RPC / signal abort（→'cancelled'，不广播 resolved，office 按 expiresAtMs 过期）；allow-always 降级为 allowed-once（DSH 无持久授权，持久许可归治理策略）。
+- presence 形状实证：`runtimeEventBridge.ts` byAgent = `[{agentId, recent:[...]}]`，`gatewayPresence.ts` 按 agentId 取 recent——adapter 的真实 activity 跟踪输出与此一致。
+
 ## 4. 验收路径（Phase 3 收口）
 
 同时启动多个 DSH Agent → Office 出现多个不同真实 Agent；Agent 完成 → UI 状态同步变化。前置：adapter live + office dev server + 多会话驱动。

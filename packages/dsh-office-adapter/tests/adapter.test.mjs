@@ -7,6 +7,7 @@ import {
   deriveAssistantText,
   sessionKeyFor,
   createDispatch,
+  createApprovals,
   apply,
 } from "../lib/index.js";
 
@@ -145,7 +146,73 @@ test("dispatch: unaudited seams answer not_implemented, unknown methods named", 
   const { ctx } = makeCtx();
   const io = createDispatch(ctx);
   const abort = await io.dispatch("chat.abort", {}, "r5");
-  assert.equal(abort.error.code, "not_implemented");
+  assert.equal(abort.error.code, "not_found");
   const unknown = await io.dispatch("definitely.not.a.method", {}, "r6");
   assert.equal(unknown.error.code, "unknown_method");
+});
+
+test("approvals: answerer parks, broadcasts requested, resolves through resolveExternal", async () => {
+  const frames = [];
+  const ctx = { on: () => () => {} };
+  const approvals = createApprovals(ctx, (frame) => frames.push(frame), () => true);
+  const outcomePromise = approvals.answerer(
+    { agent: { id: "sess-a" }, toolName: "pwsh", reason: "git reset --hard targets the main workspace", signal: new AbortController().signal },
+    async () => "unavailable",
+  );
+  const requested = frames.find((f) => f.event === "exec.approval.requested");
+  assert.ok(requested, "requested frame emitted");
+  assert.match(requested.payload.request.command, /git reset --hard/);
+  assert.equal(requested.payload.request.sessionKey, sessionKeyFor("sess-a"));
+  assert.equal(approvals.resolveExternal(requested.payload.id, "allow-once", "office"), true);
+  assert.equal(await outcomePromise, "allowed-once");
+  const resolvedFrame = frames.find((f) => f.event === "exec.approval.resolved");
+  assert.ok(resolvedFrame, "resolved frame emitted");
+  assert.equal(resolvedFrame.payload.decision, "allow-once");
+});
+
+test("approvals: deny maps to rejected, unknown id false, abort cancels", async () => {
+  const frames = [];
+  const ctx = { on: () => () => {} };
+  const approvals = createApprovals(ctx, (frame) => frames.push(frame), () => true);
+  const controller = new AbortController();
+  const p2 = approvals.answerer({ agent: { id: "b" }, toolName: "t2", signal: new AbortController().signal }, async () => "unavailable");
+  assert.equal(approvals.resolveExternal("nope", "deny", null), false);
+  const id2 = frames.filter((f) => f.event === "exec.approval.requested").map((f) => f.payload.id)[0];
+  assert.equal(approvals.resolveExternal(id2, "deny", "tester"), true);
+  assert.equal(await p2, "rejected");
+  const p3 = approvals.answerer({ agent: { id: "c" }, toolName: "t3", signal: controller.signal }, async () => "unavailable");
+  controller.abort();
+  assert.equal(await p3, "cancelled");
+});
+
+test("approvals: no downlinks delegates to next", async () => {
+  const ctx = { on: () => () => {} };
+  const approvals = createApprovals(ctx, () => {}, () => false);
+  let nextCalled = false;
+  const out = await approvals.answerer({ agent: { id: "a" }, toolName: "t" }, async () => { nextCalled = true; return "unavailable"; });
+  assert.equal(nextCalled, true);
+  assert.equal(out, "unavailable");
+});
+
+test("dispatch: exec.approval.resolve routes into the approvals bridge", async () => {
+  const frames = [];
+  const ctx = {
+    on: () => () => {},
+    sessions: { list: () => [], get: () => undefined },
+    agents: { list: () => [], get: () => undefined },
+    webServer: { registerUpgrade: () => () => {} },
+    logger: { info() {}, warn() {} },
+  };
+  const approvals = createApprovals(ctx, (frame) => frames.push(frame), () => true);
+  const io = createDispatch(ctx, (frame) => frames.push(frame), approvals);
+  const outcomePromise = approvals.answerer(
+    { agent: { id: "sess-r" }, toolName: "pwsh", reason: "needs approval", signal: new AbortController().signal },
+    async () => "unavailable",
+  );
+  const requested = frames.find((f) => f.event === "exec.approval.requested");
+  const bad = await io.dispatch("exec.approval.resolve", { id: "missing", decision: "allow-once" }, "rx");
+  assert.equal(bad.error.code, "not_found");
+  const res = await io.dispatch("exec.approval.resolve", { id: requested.payload.id, decision: "deny" }, "ry");
+  assert.equal(res.ok, true);
+  assert.equal(await outcomePromise, "rejected");
 });

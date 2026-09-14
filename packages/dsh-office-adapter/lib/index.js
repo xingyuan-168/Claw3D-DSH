@@ -100,6 +100,85 @@ export function projectHistory(session) {
 }
 
 /**
+ * Map one office exec-approval decision onto the DSH ApprovalOutcome
+ * vocabulary. DSH has no persistent grant, so allow-always degrades to a
+ * one-shot allowance; persistent grants belong to governance policy.
+ */
+const OFFICE_DECISION_TO_OUTCOME = {
+  "allow-once": "allowed-once",
+  "allow-always": "allowed-once",
+  "deny": "rejected",
+};
+
+/**
+ * Bridge DSH approval asks to the office interactive-approval contract:
+ * broadcasts exec.approval.requested frames, parks until the office resolves
+ * via exec.approval.resolve (or the ask signal aborts), then answers the DSH
+ * waterfall with the mapped ApprovalOutcome. Claims nothing when no office
+ * client is connected - other answerers (or fail-closed) decide instead.
+ * @param {object} ctx - cordis context (unused hook for future policy reads).
+ * @param {(frame: object) => void} broadcast - downstream frame sink.
+ * @param {() => boolean} hasDownlinks - whether an office client is listening.
+ * @returns {{answerer: Function, resolveExternal: Function}}
+ */
+export function createApprovals(ctx, broadcast, hasDownlinks) {
+  const pending = new Map();
+  let seq = 0;
+
+  const answerer = async (req, next) => {
+    if (!hasDownlinks()) return next();
+    const agentId = String(req && req.agent && req.agent.id ? req.agent.id : "");
+    const id = "ap-" + (++seq) + "-" + randomUUID().slice(0, 8);
+    const createdAtMs = Date.now();
+    const expiresAtMs = createdAtMs + 5 * 60 * 1000;
+    const command = String((req && req.reason) || (req && req.toolName) || "tool approval");
+    const promise = new Promise((resolve) => {
+      pending.set(id, { resolve });
+      if (req && req.signal) {
+        req.signal.addEventListener("abort", () => {
+          if (pending.delete(id)) resolve("cancelled");
+        }, { once: true });
+      }
+    });
+    broadcast({
+      type: "event",
+      event: "exec.approval.requested",
+      payload: {
+        id,
+        request: {
+          command,
+          cwd: null,
+          host: null,
+          security: null,
+          ask: null,
+          agentId: agentId || null,
+          resolvedPath: null,
+          sessionKey: agentId ? sessionKeyFor(agentId) : null,
+        },
+        createdAtMs,
+        expiresAtMs,
+      },
+    });
+    return promise;
+  };
+
+  const resolveExternal = (approvalId, decision, resolvedBy) => {
+    const entry = pending.get(approvalId);
+    if (!entry) return false;
+    pending.delete(approvalId);
+    entry.resolve(OFFICE_DECISION_TO_OUTCOME[decision] ?? "rejected");
+    broadcast({
+      type: "event",
+      event: "exec.approval.resolved",
+      payload: { id: approvalId, decision, resolvedBy: resolvedBy ?? "office", ts: Date.now() },
+    });
+    return true;
+  };
+
+  return { answerer, resolveExternal };
+}
+
+/**
  * Methods whose DSH seam is not yet audited; they must answer explicitly
  * instead of serving fake data (V4: no simulated success).
  */
@@ -107,11 +186,11 @@ const NOT_IMPLEMENTED = new Set([
   "agents.create", "agents.update", "agents.delete",
   "agents.files.get", "agents.files.set",
   "config.get", "config.patch", "config.set",
-  "exec.approvals.get", "exec.approvals.set", "exec.approval.resolve",
+  "exec.approvals.get", "exec.approvals.set",
   "models.list", "skills.status",
   "cron.list", "cron.add", "cron.run", "cron.remove",
   "sessions.list", "sessions.preview", "sessions.patch", "sessions.reset",
-  "chat.abort", "agent.wait", "wake",
+  "agent.wait", "wake",
 ]);
 
 /**
@@ -119,9 +198,10 @@ const NOT_IMPLEMENTED = new Set([
  * tests drive every method directly; apply() wires it to the WS route.
  * @param {object} ctx - carries sessions + agents services.
  * @param {(frame: object) => void} broadcast - downstream frame sink.
+ * @param {{resolveExternal: Function}} [approvals] - interactive approvals bridge.
  * @returns {{dispatch: Function, onSessionCreated: Function, onSessionDisposed: Function, onSessionEvent: Function}}
  */
-export function createDispatch(ctx, broadcast = () => {}) {
+export function createDispatch(ctx, broadcast = () => {}, approvals = null) {
   /** sessionKey -> last activity epoch ms, grown from real session events. */
   const activity = new Map();
   /** agentId -> pending chat run id; one ordinary follow-up at a time. */
@@ -190,11 +270,35 @@ export function createDispatch(ctx, broadcast = () => {}) {
         return resOk(id, { adapter: "dsh-office-adapter", ok: true });
       case "agents.list":
         return resOk(id, agentListPayload());
+      case "exec.approval.resolve": {
+        const approvalId = typeof p.id === "string" ? p.id : "";
+        const decision = typeof p.decision === "string" ? p.decision : "";
+        if (!approvalId || !OFFICE_DECISION_TO_OUTCOME[decision]) {
+          return resErr(id, "invalid", "id and decision (allow-once | allow-always | deny) are required");
+        }
+        if (!approvals) return resErr(id, "not_implemented", "approvals bridge is not mounted");
+        const resolved = approvals.resolveExternal(approvalId, decision, typeof p.resolvedBy === "string" ? p.resolvedBy : null);
+        if (!resolved) return resErr(id, "not_found", "no pending approval " + approvalId);
+        return resOk(id, { resolved: true });
+      }
       case "chat.history": {
         const sessionId = typeof p.sessionId === "string" ? p.sessionId : (typeof p.agentId === "string" ? p.agentId : "");
         const session = sessionId ? ctx.sessions.get(sessionId) : undefined;
         if (!session) return resErr(id, "not_found", "no live DSH session " + sessionId);
         return resOk(id, projectHistory(session));
+      }
+      case "chat.abort": {
+        const agentId = typeof p.agentId === "string" ? p.agentId : (typeof p.sessionId === "string" ? p.sessionId : "");
+        const keyAgentId = typeof p.sessionKey === "string" && p.sessionKey.startsWith("agent:") ? p.sessionKey.split(":")[1] : "";
+        const target = agentId || keyAgentId;
+        const agent = target ? ctx.agents.get(target) : undefined;
+        if (!agent) return resErr(id, "not_found", "no live DSH agent " + target);
+        try {
+          agent.cancel({ kind: "user" });
+        } catch (error) {
+          return resErr(id, "abort_failed", String(error && error.message ? error.message : error));
+        }
+        return resOk(id, { aborted: 1 });
       }
       case "chat.send": {
         const agentId = typeof p.agentId === "string" ? p.agentId : (typeof p.sessionId === "string" ? p.sessionId : "");
@@ -244,7 +348,8 @@ export function apply(ctx, config = {}) {
     }
   };
 
-  const io = createDispatch(ctx, broadcast);
+  const approvals = createApprovals(ctx, broadcast, () => downlinks.size > 0);
+  const io = createDispatch(ctx, broadcast, approvals);
 
   wss.on("connection", (socket) => {
     const send = (frame) => socket.send(JSON.stringify(frame));
@@ -276,6 +381,7 @@ export function apply(ctx, config = {}) {
     ctx.on("session/created", io.onSessionCreated),
     ctx.on("session/disposed", io.onSessionDisposed),
     ctx.on("session/event", io.onSessionEvent),
+    ctx.on("approval/request", approvals.answerer),
   ];
 
   ctx.logger?.info?.("dsh-office-adapter: office gateway protocol live at " + routePath);

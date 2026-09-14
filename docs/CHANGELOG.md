@@ -10,10 +10,13 @@
 
 ### Phase 3 — Claw3D → DSH（进行中：feat，部分完成）
 
+- fix: office adapter 重建——导出可直测的 createDispatch（apply 复用），修复半成品重构损坏；14/14 node:test（agents.list 真 store、chat.send→followup、presence、approval 桥接全直驱）。
+- feat: chat.send 真桥接（ctx.agents.get + agent.followup + createUserMessage）、chat.abort（agent.cancel {kind:user}）、exec.approval.requested/resolved 交互审批事件桥（approval/request waterfall answerer，office 离线让位 fail-closed；allow-always 降级 allowed-once 已记录）。
+- docs: upstream/VISUAL_REFS.md——Phase 5 五个视觉参考源 pin（SSH 可达性 + HEAD + 许可 + 提取策略）；office-adapter-seam-audit.md 增 approval 契约实测修正（exec.approvals.* 实为策略配置文件，非审批队列）。
 - feat: subtree 方式接入 Claw3D 0565b78（MIT）至 apps/cq-office，上游尊重、不 fork。
 - docs: office-adapter-seam-audit.md —— Office 网关契约（27 RPC 方法 + presence/chat 事件帧）与 DSH 接缝实证（webServer.registerUpgrade、HostConnectionRpc、sessionProjections 快照面、approval seam）。
-- feat(plugin): @aios/dsh-office-adapter 0.1.0 —— 在 DSH webserver 原生承载 Office 网关协议（/api/gateway/ws upgrade 路由），status/agents.list 从真实 sessionProjections 读取，未审计接缝显式 not_implemented（不造模拟数据）；已安装 profile 并经 --dump-config 验证组合。
-- 待续：sessionProjections 读面深审计、chat.send/approval/todo 投影、DSH 重启后多 Agent 活体验收（Office 出现多个不同真实 Agent）。
+- feat(plugin): @aios/dsh-office-adapter 0.1.0 —— 在 DSH webserver 原生承载 Office 网关协议（/api/gateway/ws upgrade 路由），agents.list/chat.history 从真实 sessions/surface 读取，未审计接缝显式 not_implemented（不造模拟数据）；已安装 profile 并经 --dump-config 验证组合。
+- 待续：多 Agent 活体验收（需 DSH 重启 + office dev server；Office 出现多个不同真实 Agent）、todo 投影、IR v2 + 首个真实 base/head Delta。
 
 ### Phase 2A — Archify + Architecture Evidence 基线（feat）
 
