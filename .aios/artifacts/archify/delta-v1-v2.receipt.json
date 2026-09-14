@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "compare",
+  "type": "architecture",
+  "comparatorVersion": 1,
+  "canonicalVersion": 1,
+  "completeness": "complete",
+  "proofLevel": "revision-pinned",
+  "base": {
+    "title": "Claw3D-DSH 融合仓库系统架构",
+    "rawSha256": "bd4f1fef254960fc35b2b6a3f005f88db29d84c2550c7523c2929f5380ce031f",
+    "semanticSha256": "78345b52c5ad09532f37a33e254643a3f79b3f099a3f7e5c8fc0470e214ad87d",
+    "bytes": 4172,
+    "revision": "81279d199e9a92fcab0522134f44678aa096757f"
+  },
+  "head": {
+    "title": "Claw3D-DSH 融合仓库系统架构",
+    "rawSha256": "11ef7a08e5fd57a6d5ac6082de8ba49ff2036a6270cd9cc290497d87896e3825",
+    "semanticSha256": "35b97ffcc8a086d9f6a5213f6af0c202a4079c85d51afdb822d8664401b86d4e",
+    "bytes": 4797,
+    "revision": "73f01bcae66ee271f63c64754d52e49804c61ae0"
+  },
+  "summary": {
+    "components": {
+      "added": 1,
+      "changed": 0,
+      "evidenceChanged": 0,
+      "removed": 0,
+      "moved": 0
+    },
+    "connections": {
+      "added": 2,
+      "changed": 0,
+      "removed": 1,
+      "rerouted": 0
+    },
+    "boundaries": {
+      "added": 0,
+      "changed": 1,
+      "removed": 0,
+      "geometryChanged": 0
+    },
+    "presentationChanged": true,
+    "provenanceChanged": true
+  },
+  "changes": {
+    "components": [
+      {
+        "id": "office-adapter",
+        "headLabel": "Office Adapter",
+        "status": "added",
+        "classifications": [
+          "semantic"
+        ],
+        "changedFields": []
+      }
+    ],
+    "connections": [
+      {
+        "id": "adapter-to-dsh",
+        "head": {
+          "from": "office-adapter",
+          "to": "dsh-core",
+          "label": "sessions/agents/approval"
+        },
+        "status": "added",
+        "classifications": [
+          "topology"
+        ],
+        "changedFields": []
+      },
+      {
+        "id": "claw3d-to-adapter",
+        "head": {
+          "from": "claw3d",
+          "to": "office-adapter",
+          "label": "WS /api/gateway/ws"
+        },
+        "status": "added",
+        "classifications": [
+          "topology"
+        ],
+        "changedFields": []
+      },
+      {
+        "id": "claw3d-to-dsh",
+        "base": {
+          "from": "claw3d",
+          "to": "dsh-core",
+          "label": "web channel"
+        },
+        "status": "removed",
+        "classifications": [
+          "topology"
+        ],
+        "changedFields": []
+      }
+    ],
+    "boundaries": [
+      {
+        "key": "region:主工作区（Git 单真源）",
+        "kind": "region",
+        "label": "主工作区（Git 单真源）",
+        "status": "changed",
+        "classifications": [
+          "scope"
+        ],
+        "changedFields": [
+          "/wraps"
+        ]
+      }
+    ]
+  },
+  "identity": {
+    "components": "components[].id",
+    "connections": "connections[].id (required)",
+    "boundaries": "boundaries[].kind + boundaries[].label (derived)"
+  },
+  "view": {
+    "visualPreset": "classic"
+  },
+  "limitations": [
+    "Authored Architecture IR only; no runtime impact, causality, risk, or mergeability is inferred.",
+    "Boundary identity is conservatively derived from kind + label."
+  ],
+  "artifact": {
+    "sha256": "0f0d9a6f435ed0dd3aeca5e024a77980082d8983dbd0622f976d72366cd6ece6",
+    "bytes": 1847108
+  },
+  "validation": {
+    "checksPassed": 28,
+    "checkCount": 28,
+    "baseComposition": "pass",
+    "headComposition": "pass"
+  }
+}

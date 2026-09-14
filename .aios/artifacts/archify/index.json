@@ -12,7 +12,27 @@
       "type": "architecture",
       "source": "docs/architecture/system.architecture.json",
       "artifact": ".aios/artifacts/archify/system.html",
-      "sourceRevision": "81279d199e9a92fcab0522134f44678aa096757f",
+      "sourceRevision": "73f01bcae66ee271f63c64754d52e49804c61ae0",
+      "validated": true
+    },
+    {
+      "id": "delta-v1-v2",
+      "type": "architecture-delta",
+      "base": {
+        "source": "docs/architecture/system.architecture.json",
+        "revision": "e40d6d3",
+        "contentRevision": "81279d199e9a92fcab0522134f44678aa096757f",
+        "semanticSha256": "78345b52c5ad09532f37a33e254643a3f79b3f099a3f7e5c8fc0470e214ad87d"
+      },
+      "head": {
+        "source": "docs/architecture/system.architecture.json",
+        "revision": "73f01bcae66ee271f63c64754d52e49804c61ae0",
+        "semanticSha256": "35b97ffcc8a086d9f6a5213f6af0c202a4079c85d51afdb822d8664401b86d4e"
+      },
+      "artifact": ".aios/artifacts/archify/delta-v1-v2.html",
+      "receipt": ".aios/artifacts/archify/delta-v1-v2.receipt.json",
+      "proofLevel": "revision-pinned",
+      "completeness": "complete",
       "validated": true
     }
   ]
