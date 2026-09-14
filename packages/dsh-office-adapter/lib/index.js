@@ -1,47 +1,93 @@
 /**
  * DSH -> Claw3D projection (V4 spec section 46). Hosts the Claw3D office
- * gateway protocol on the DSH web server's upgrade registry and projects
- * REAL DSH state into it. Projection only: no simulated agents, no task
- * engine, no second runtime. Methods whose DSH seam is not yet audited
- * answer an explicit not_implemented error instead of fake data.
+ * gateway protocol on the DSH web server upgrade registry and projects
+ * REAL DSH state into it:
+ *
+ *   - agents.list      <- ctx.sessions.list()  (live session store)
+ *   - chat.history     <- session.surface fold (LLM message projection)
+ *   - presence events  <- session/created + session/disposed broadcasts
+ *   - status           <- adapter self-report
+ *
+ * Projection only: no simulated agents, no task engine, no second runtime.
+ * Methods whose DSH seam is not yet audited (chat.send turn entry, approval
+ * bridges, todos) answer an explicit not_implemented error instead of fake
+ * data. Seam authority: docs/upstream-reviews/office-adapter-seam-audit.md.
  */
 
-import { WebSocketServer } from "node:ws";
+import { WebSocketServer } from "ws";
 
 export const name = "dsh-office-adapter";
 
-export const inject = ["webServer"];
+export const inject = ["webServer", "sessions"];
 
 const OFFICE_WS_PATH = "/api/gateway/ws";
+const MAIN_KEY = "main";
 
-/** Frame builders shared with the office client contract. */
 const resOk = (id, payload) => ({ type: "res", id, ok: true, payload: payload ?? {} });
 const resErr = (id, code, message) => ({ type: "res", id, ok: false, error: { code, message } });
 
 /**
- * Read the real DSH agent view from the session-projection registry when
- * the runtime provides it. Returns null when the capability is absent -
- * the adapter then reports a capability error instead of pretending.
- * @param {import('@deepseek-ai/cordis').Context} ctx
+ * Project one live DSH session into the office agent payload shape.
+ * @param {object} session - a live Session from ctx.sessions.list().
  */
-function readAgentView(ctx) {
-  const registry = ctx.sessionProjections;
-  if (!registry || typeof registry.snapshot !== "function") return null;
-  try {
-    return registry.snapshot();
-  } catch {
-    return null;
-  }
+export function projectAgent(session) {
+  const header = session.header ?? {};
+  const id = String(session.id ?? header.id ?? "");
+  const preset = typeof header.agentPreset === "string" ? header.agentPreset : "";
+  const name = preset || id.slice(0, 12) || "session";
+  const isSubagent = header.origin === "subagent" || typeof header.delegationDepth === "number";
+  return {
+    id,
+    name,
+    workspace: typeof header.cwd === "string" ? header.cwd : "",
+    identity: { name, emoji: isSubagent ? "\u{1F6F0}\uFE0F" : "\u{1F916}" },
+    role: isSubagent ? "Subagent" : "Session",
+    createdAt: header.createdAt,
+  };
 }
 
 /**
- * @param {import('@deepseek-ai/cordis').Context} ctx
+ * Extract plain text from one LLM message (string or content parts).
+ * @param {object} message
+ */
+export function messageText(message) {
+  if (!message) return "";
+  if (typeof message.content === "string") return message.content;
+  if (Array.isArray(message.content)) {
+    return message.content
+      .filter((part) => part && part.type === "text" && typeof part.text === "string")
+      .map((part) => part.text)
+      .join("");
+  }
+  return "";
+}
+
+/**
+ * Fold one session ordered surface into the office chat history payload.
+ * @param {object} session - a live Session with a surface.
+ */
+export function projectHistory(session) {
+  const surface = session.surface;
+  const entries = Array.isArray(surface) ? surface : (surface && surface.entries) || [];
+  const messages = [];
+  for (const entry of entries) {
+    const message = (entry && entry.message) || entry;
+    const role = message && message.role;
+    if (role !== "user" && role !== "assistant") continue;
+    const text = messageText(message).trim();
+    if (!text) continue;
+    messages.push({ role, text, seq: (entry && entry.seq) ?? (message && message.seq) });
+  }
+  return { sessionId: String(session.id), messages };
+}
+
+/**
+ * @param {object} ctx - cordis context carrying webServer + sessions services.
  * @param {{routePath?: string}} config
  */
 export function apply(ctx, config = {}) {
-  const routePath = config.routePath ?? OFFICE_WS_PATH;
+  const routePath = (config && config.routePath) || OFFICE_WS_PATH;
   const wss = new WebSocketServer({ noServer: true });
-  /** @type {Set<(frame: object) => void>} */
   const downlinks = new Set();
 
   const broadcast = (frame) => {
@@ -54,22 +100,63 @@ export function apply(ctx, config = {}) {
     }
   };
 
+  const agentListPayload = () => ({
+    defaultId: null,
+    mainKey: MAIN_KEY,
+    agents: ctx.sessions.list().map(projectAgent),
+  });
+
+  const broadcastPresence = () => {
+    broadcast({ type: "event", event: "presence", payload: { sessions: { recent: [], byAgent: [] } } });
+  };
+
+  // Real presence feed: DSH session lifecycle drives office presence.
+  const disposers = [
+    ctx.on("session/created", () => broadcastPresence()),
+    ctx.on("session/disposed", () => broadcastPresence()),
+  ];
+
   const dispatch = async (method, params, id) => {
     const p = params ?? {};
     switch (method) {
       case "status":
-        return resOk(id, { adapter: "dsh-office-adapter", ok: true });
-      case "agents.list": {
-        const snapshot = readAgentView(ctx);
-        if (!snapshot) {
-          return resErr(id, "capability_missing", "session-projection registry does not expose a snapshot read face on this DSH build");
-        }
-        return resOk(id, { snapshot });
+        return resOk(id, { adapter: "dsh-office-adapter", ok: true, route: routePath });
+      case "agents.list":
+        return resOk(id, agentListPayload());
+      case "chat.history": {
+        const sessionId = typeof p.sessionId === "string" ? p.sessionId : (typeof p.agentId === "string" ? p.agentId : "");
+        const session = sessionId ? ctx.sessions.get(sessionId) : undefined;
+        if (!session) return resErr(id, "not_found", "no live DSH session " + sessionId);
+        return resOk(id, projectHistory(session));
       }
+      case "agents.create":
+      case "agents.update":
+      case "agents.delete":
+      case "chat.send":
+      case "chat.abort":
+      case "sessions.list":
+      case "sessions.preview":
+      case "sessions.patch":
+      case "sessions.reset":
+      case "exec.approvals.get":
+      case "exec.approvals.set":
+      case "exec.approval.resolve":
       case "models.list":
-        return resErr(id, "not_implemented", "models.list requires the DSH model-selection seam; see docs/upstream-reviews/office-adapter-seam-audit.md");
+      case "skills.status":
+      case "config.get":
+      case "config.patch":
+      case "config.set":
+      case "agents.files.get":
+      case "agents.files.set":
+      case "cron.list":
+      case "cron.add":
+      case "cron.run":
+      case "cron.remove":
+      case "agent.wait":
+      case "wake":
+        return resErr(id, "not_implemented", method + " projection requires its next audited DSH seam (docs/upstream-reviews/office-adapter-seam-audit.md)");
       default:
-        return resErr(id, "not_implemented", method + " is not projected yet; the DSH seam is documented in docs/upstream-reviews/office-adapter-seam-audit.md");
+        return resErr(id, "unknown_method", String(method));
     }
   };
 
@@ -77,6 +164,7 @@ export function apply(ctx, config = {}) {
     const send = (frame) => socket.send(JSON.stringify(frame));
     downlinks.add(send);
     send({ type: "event", event: "connect.challenge", payload: { nonce: "dsh-office-adapter" } });
+    send({ type: "event", event: "presence", payload: { sessions: { recent: [], byAgent: [] } } });
     socket.on("message", async (raw) => {
       let frame;
       try {
@@ -84,7 +172,7 @@ export function apply(ctx, config = {}) {
       } catch {
         return;
       }
-      if (frame?.type !== "req" || typeof frame.method !== "string") return;
+      if (!frame || frame.type !== "req" || typeof frame.method !== "string") return;
       send(await dispatch(frame.method, frame.params, frame.id));
     });
     socket.on("close", () => downlinks.delete(send));
@@ -97,9 +185,16 @@ export function apply(ctx, config = {}) {
     },
   });
 
-  ctx.logger?.info?.(`dsh-office-adapter: office gateway protocol live at ${routePath}`);
+  ctx.logger?.info?.("dsh-office-adapter: office gateway protocol live at " + routePath);
 
   return () => {
+    for (const dispose of disposers) {
+      try {
+        dispose?.();
+      } catch {
+        // teardown continues
+      }
+    }
     disposeUpgrade?.();
     for (const socket of wss.clients) socket.close();
     wss.close();
