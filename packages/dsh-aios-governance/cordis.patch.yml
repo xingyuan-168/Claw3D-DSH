@@ -1,0 +1,11 @@
+# The AI Engineering OS governance bundle patch: ONE insert over the
+# composed profile tree. Activation is service-availability driven - the
+# plugin starts once ctx.tools and ctx.systemPrompt exist and disposes with
+# the profile. Config is intentionally empty: the workspace root falls back
+# to the invoking directory (the DSH default workspace root) and the policy
+# file resolves to <workspace>/governance/policy.yaml.
+
+- insert:
+    - id: aios-governance
+      name: '@aios/dsh-governance'
+      config: {}

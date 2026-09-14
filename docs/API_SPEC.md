@@ -15,9 +15,12 @@ MCP 与 CLI 共享同一实现与响应封装（`{ok, data} / {ok:false, error:{
 | memory_record | project_root, record_type, title, summary, source, source_commit?, tags?, candidate? | 写 JSONL（主会话）或提交 candidate（子 Agent） |
 | memory_candidate | project_root, action=list\|accept\|reject, candidate_id? | 主会话处理子 Agent candidate：列表 / 并入 JSONL / 丢弃 |
 
-## CLI 命令（6）
+## CLI 命令（8）
 
-`aios init / check / finish / memory search|record|reindex|candidates|candidate / worktree prepare|check|finish|cleanup|list / mcp（deprecated）/ doctor`。
+`aios init / check / finish / memory search|record|reindex|candidates|candidate / worktree prepare|check|finish|cleanup|list / approval record / context refresh / mcp（deprecated）/ doctor`。
+
+- `approval record [--subject --scope --decision --decided-by]` = 持久 UI 审批工程事实，只写 docs/design/UI_SPEC.md 的 approval 块（V4 §9；runtime approval 归 DSH）。
+- `context refresh` = 重建 .aios/context/PROJECT_CONTEXT.md 派生缓存（永不作为事实源）。
 
 - `check [--change-class --requirement-id]` = 仓库治理（GitHub 就绪 + 卫生 + output 纯净 + .gitignore 合规）+ docs 检查 + Code Start 预览（含调研分层），阻塞退出码 40。
 - `finish [--test-command "..."] --memory-written|--memory-not-needed` = Finish Gate（薄真实检查）；退出码 40 表示阻塞。

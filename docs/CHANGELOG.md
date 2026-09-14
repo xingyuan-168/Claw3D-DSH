@@ -8,6 +8,13 @@
 
 ## Unreleased
 
+### Phase 2 — DSH Governance Integration（feat）
+
+- docs: dsh-seam-audit.md——实证确认 tools/pre-execute（Waterfall，ALLOW/DENY/ASK）、approval/request 原生审批链、ctx.tools.register、systemPrompt.section、bundle patch 组合机制（docs/upstream-reviews/）。
+- feat(plugin): packages/dsh-aios-governance（@aios/dsh-governance 0.1.0，零依赖 ESM）——governance/policy.yaml 单源解析、pre-execute 硬拦截（永久 DENY：force push/删远端 ref/update-ref -d/广域递归删/docker 卷破坏；主工作区破坏性 git→ASK；protected_paths→DENY；governance_paths 主工作区→ASK、worktree 内放行）、12 个 aios_* 原生 tools（桥接 aios CLI）、§12.1 短 prompt section；bundle 声明自动成为 profile 层。
+- feat(cli): `aios approval record`（UI_SPEC 审批事实唯一写入口）、`aios context refresh`；node:test 14 例全过；已安装进本机 web profile 并经 --dump-config 验证组合。
+- 待活体验证（需重启 DSH）：force push/input 写入被实际拦截、ASK 进入原生 approval、Claw3D 可见（Phase 3）。
+
 ### Phase 1 — AI OS DSH-only 清理（refactor: breaking）
 
 - refactor(rename): `codex_ai_os→ai_engineering_os`、CLI `codex-os→aios`、`.codex-os→.aios`、branch 前缀 `aios/wt-*`；pyproject 更名 `ai-engineering-os` + DSH 描述（ADR-0017）。

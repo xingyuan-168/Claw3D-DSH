@@ -1,0 +1,14 @@
+{
+  "name": "@aios/dsh-governance",
+  "description": "AI Engineering OS governance plugin for the DeepSeek Harness: tools/pre-execute ALLOW/DENY/ASK over governance/policy.yaml, native aios_* tools, and the governance prompt section. Governance only - it never schedules agents or replaces DSH runtime capabilities.",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "files": ["lib", "cordis.patch.yml"],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT"
+}

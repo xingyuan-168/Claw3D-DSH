@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -19,7 +20,12 @@ from ai_engineering_os.application.doctor import DoctorService
 from ai_engineering_os.application.project import ProjectInitializer
 from ai_engineering_os.application.repository import RepositoryGovernanceService
 from ai_engineering_os.cli.output import emit, error_envelope, success_envelope
-from ai_engineering_os.core.gates import GateError, evaluate_code_start, evaluate_finish
+from ai_engineering_os.core.gates import (
+    GateError,
+    evaluate_code_start,
+    evaluate_finish,
+    write_frontend_approval,
+)
 from ai_engineering_os.core.worktree import WorktreeError, WorktreeManager, WorktreeRecord
 from ai_engineering_os.domain.config import ProjectType
 from ai_engineering_os.infrastructure.config import ConfigError, load_project_config
@@ -47,6 +53,12 @@ app.add_typer(memory_app, name="memory")
 
 worktree_app = typer.Typer(help="Disposable worktrees under .worktrees/.", no_args_is_help=True)
 app.add_typer(worktree_app, name="worktree")
+
+approval_app = typer.Typer(help="Durable frontend UI approval facts in docs/design/UI_SPEC.md.", no_args_is_help=True)
+app.add_typer(approval_app, name="approval")
+
+context_app = typer.Typer(help="Derived context cache under .aios/context/ (never a source of truth).", no_args_is_help=True)
+app.add_typer(context_app, name="context")
 
 
 def _fail(code: str, message: str, exit_code: int, json_output: bool) -> None:
@@ -612,6 +624,65 @@ def _worktree_payload(record: WorktreeRecord) -> dict[str, object]:
         "status": record.status,
         "clean": record.clean,
     }
+
+
+@context_app.command("refresh")
+def context_refresh_command(
+    project_root: Annotated[Path, typer.Option("--project-root")] = Path("."),
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Regenerate the derived PROJECT_CONTEXT.md cache from the docs/ tree."""
+
+    try:
+        path = DocumentManager(project_root.resolve()).generate_context()
+    except OSError as exc:
+        _fail("CONTEXT_REFRESH_FAILED", str(exc), 2, json_output)
+        return
+    emit(
+        success_envelope({"context": path.as_posix()}),
+        json_output=json_output,
+        human=f"Regenerated {path.as_posix()}.",
+    )
+
+
+@approval_app.command("record")
+def approval_record_command(
+    subject: Annotated[str, typer.Option("--subject")],
+    scope: Annotated[str, typer.Option("--scope")],
+    decision: Annotated[str, typer.Option("--decision", help="approved or rejected.")],
+    decided_by: Annotated[str, typer.Option("--decided-by")],
+    project_root: Annotated[Path, typer.Option("--project-root")] = Path("."),
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Record one durable frontend UI approval fact (V4 spec section 9).
+
+    Runtime approvals belong to DSH; this writes only the Git-tracked
+    docs/design/UI_SPEC.md engineering fact the Frontend gate verifies.
+    """
+
+    if decision not in {"approved", "rejected"}:
+        _fail("CONFIG_INVALID", "decision must be approved or rejected", 2, json_output)
+        return
+    if not decided_by.strip() or not scope.strip() or not subject.strip():
+        _fail("CONFIG_INVALID", "subject, scope, and decided_by are required", 2, json_output)
+        return
+    try:
+        write_frontend_approval(
+            project_root / "docs" / "design" / "UI_SPEC.md",
+            scope=scope,
+            approved_by=decided_by,
+            approved_on=datetime.now(UTC).date().isoformat(),
+        )
+    except OSError as exc:
+        _fail("DOCUMENT_WRITE_FAILED", str(exc), 2, json_output)
+        return
+    emit(
+        success_envelope(
+            {"subject": subject, "scope": scope, "decision": decision, "decided_by": decided_by}
+        ),
+        json_output=json_output,
+        human=f"Recorded {decision} for scope {scope!r} in docs/design/UI_SPEC.md.",
+    )
 
 
 def main() -> None:

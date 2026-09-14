@@ -9,6 +9,7 @@ protected_paths:
   - ".git/**"
   - ".aios/state/**"
   - "**/.env"
+  - "credentials/**"
   - "**/credentials/**"
 
 governance_paths:
