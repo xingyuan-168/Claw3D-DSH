@@ -1,0 +1,8 @@
+# The DSH-to-Claw3D projection bundle patch: registers the office gateway
+# WS route on the DSH web server. Claw3D office points its upstream gateway
+# URL at this server; no protocol translation layer and no simulated data.
+
+- insert:
+    - id: dsh-office-adapter
+      name: '@aios/dsh-office-adapter'
+      config: {}

@@ -1,0 +1,36 @@
+# Office Adapter 接缝审计（Phase 3 P3-1）
+
+日期：2026-09-14。证据全部来自本机安装的 dsh 0.1.1-rc.2 类型文件与 Claw3D subtree 源码（0565b78）。
+
+## 1. Claw3D Office 网关契约（server/demo-gateway-adapter.js + server/gateway-proxy.js）
+
+传输：WebSocket `/api/gateway/ws`（office 自带 same-origin proxy，upstream URL 由 studio-settings 解析，默认 `ws://localhost:18789`）。
+
+帧形状：
+- 请求 `{type:"req", id, method, params}` → 响应 `{type:"res", id, ok, payload|error:{code,message}}`
+- 事件 `{type:"event", event:"presence"|"chat", payload}`；握手先发 `connect.challenge`（nonce）。
+
+RPC 方法面（27 个）：agents.list/create/update/delete、agents.files.get/set、config.get/patch/set、exec.approvals.get/set/resolve、models.list、skills.status、cron.list/add/run/remove、sessions.list/preview/patch/reset、chat.send/abort/history、agent.wait、status、wake。
+
+关键 payload（实证）：
+- agents.list → { defaultId, mainKey, agents:[{id,name,workspace,identity:{name,emoji},role}] }
+- presence → { sessions:{ recent:[], byAgent:[] } }
+
+## 2. DSH 侧可用接缝（rc.2）
+
+- **dsh-host-webserver**：`ctx.webServer.register(WebRoute)`（SSE 可持有响应）、`registerUpgrade({path,handler})`（exact-path WS upgrade，"Owns protocol negotiation and the upgraded socket after dispatch"）→ **office 协议可由 DSH 进程原生承载，无需翻译层**。
+- **dsh-client-connection**：`ctx.connection.handle(channel,handler,{authority})` / `intercept('/api',matches,handler)` —— 浏览器 RPC 通道注册面；mux/host downlink 路径常量 /api/events.mux、/api/events.host。
+- **dsh-session-projection**：`ctx.sessionProjections` registry，ProjectionDefinition = 纯同步 fold + client view；框架持有 per-session watermark 缓存与 change notification；carriers 消费 snapshot read face + change feed —— Office presence/agent 状态的正当数据源。
+- **审批**：`ctx.approval` / `approval/request` waterfall（P2 已审计）→ exec.approvals.* 的实现接缝。
+- **dsh-tool-todo / dsh-subagent(-control/-report)**：todo 与子代理状态的投影来源。
+
+## 3. 设计决定（V4 §46：packages/dsh-office-adapter = DSH → Claw3D projection）
+
+1. adapter 以 **cordis 插件**形态挂进 DSH profile（与 governance 插件同机制，bundle patch 声明），在 DSH webserver 上注册 office WS upgrade 路由。
+2. Claw3D office 的 upstream URL 指向 DSH webserver，adapterType 走"直连"分支；OpenClaw/Hermes 主路径在配置上停用（subtree 不 fork，源码尊重上游）。
+3. 会话/代理状态只从 sessionProjections 快照读取；审批走 approval seam；**不造模拟数据**（V4 §"不允许模拟数据假装成功"）。
+4. chat.send 的桥接属下一接缝审计（client-connection 的 channel 语义 + 会话投递 API），方法面先以 `not_implemented` 显式报错。
+
+## 4. 验收路径（Phase 3 收口）
+
+同时启动多个 DSH Agent → Office 出现多个不同真实 Agent；Agent 完成 → UI 状态同步变化。前置：adapter live + office dev server + 多会话驱动。

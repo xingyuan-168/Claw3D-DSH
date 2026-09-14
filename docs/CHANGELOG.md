@@ -8,6 +8,13 @@
 
 ## Unreleased
 
+### Phase 3 — Claw3D → DSH（进行中：feat，部分完成）
+
+- feat: subtree 方式接入 Claw3D 0565b78（MIT）至 apps/cq-office，上游尊重、不 fork。
+- docs: office-adapter-seam-audit.md —— Office 网关契约（27 RPC 方法 + presence/chat 事件帧）与 DSH 接缝实证（webServer.registerUpgrade、HostConnectionRpc、sessionProjections 快照面、approval seam）。
+- feat(plugin): @aios/dsh-office-adapter 0.1.0 —— 在 DSH webserver 原生承载 Office 网关协议（/api/gateway/ws upgrade 路由），status/agents.list 从真实 sessionProjections 读取，未审计接缝显式 not_implemented（不造模拟数据）；已安装 profile 并经 --dump-config 验证组合。
+- 待续：sessionProjections 读面深审计、chat.send/approval/todo 投影、DSH 重启后多 Agent 活体验收（Office 出现多个不同真实 Agent）。
+
 ### Phase 2A — Archify + Architecture Evidence 基线（feat）
 
 - feat: 安装 pinned `@tt-a1i/archify-dsh@0.1.0`（profile bundle；DSH skill-filesystem 挂载 archify skill，--dump-config 已验证组合，重启后按需可调用）。

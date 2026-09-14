@@ -1,0 +1,17 @@
+{
+  "name": "@aios/dsh-office-adapter",
+  "description": "DSH to Claw3D projection: hosts the Claw3D office gateway protocol natively on the DSH web server, projecting real session-projection state, approvals, and events. Projection only - it never simulates agents or replaces DSH runtime capabilities.",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "files": ["lib", "cordis.patch.yml"],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT"
+}
