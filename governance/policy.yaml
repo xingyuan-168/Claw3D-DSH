@@ -1,0 +1,31 @@
+# AI Engineering OS Governance Policy（规格 §47）
+# 机器可读硬规则单一事实源：Python 确定性内核与 DSH TypeScript 插件都解析本文件。
+# 禁止在任何代码里再写一套平行的字符串规则。
+
+policy_version: 1
+
+protected_paths:
+  - "input/**"
+  - ".git/**"
+  - ".aios/state/**"
+  - "**/.env"
+  - "**/credentials/**"
+
+governance_paths:
+  - "AGENTS.md"
+  - "governance/**"
+  - "packages/dsh-aios-governance/**"
+
+git:
+  deny_force_push: true
+  deny_remote_ref_delete: true
+  deny_update_ref_delete: true
+
+main_workspace:
+  deny_reset_hard: true
+  deny_clean_force: true
+  deny_branch_force_delete: true
+
+worktree:
+  # 已登记 disposable worktree 内允许针对自身的局部破坏性 git 操作，但不得越界主工作区
+  allow_local_destructive_git: true

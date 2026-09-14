@@ -1,0 +1,20 @@
+# Architecture Evidence manifest（规格 §46/§47AA/§47AC）
+# docs/architecture/*.json 是架构图唯一事实源；HTML 是可重建 artifact。
+# 本 manifest 登记 IR 清单与状态；状态机：ABSENT -> PENDING -> VERIFIED。
+
+version: 1
+updated_at: "2026-09-13"
+generator: "@tt-a1i/archify-dsh@0.1.0"   # 生成工具 pin，见 upstream/ARCHIFY.md
+
+diagrams: []
+# Phase 2A 将登记并生成：
+#   - id: system        file: system.architecture.json   kind: architecture
+#   - id: auth-flow     file: auth.sequence.json         kind: sequence
+# 后续按需增加 data-flow / workflow / lifecycle。
+
+delta:
+  method: "git base/head + archify compare（可重建，不落盘为事实源）"
+
+rules:
+  - 禁止 architecture-v1/v2/final 等副本文件；历史只用 Git。
+  - 重大架构变更 Finish 前必须 VERIFIED；普通小修改不强制运行 Archify。

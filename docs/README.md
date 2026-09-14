@@ -25,6 +25,16 @@ AI Engineering OS 是 Codex 的工程治理层。本目录只保存当前正确�
 | CHANGELOG.md | 变更记录 | 发布/合并前 |
 | ADR/ | 已接受/已否决的架构决策 | 重大决策前后 |
 | design/ | 前端设计基线（README + UI_SPEC） | 前端任务时 |
+| architecture/ | Architecture Evidence manifest 与 *.json IR 清单（真源） | 架构变更前后 |
+
+## 仓库根关键文件
+
+| 文件 | 内容 | 何时读 |
+| --- | --- | --- |
+| governance/policy.yaml | 机器可读硬规则单一事实源（Python 内核与 DSH 插件共读） | 改治理规则时 |
+| upstream/DSH.md / CLAW3D.md / ARCHIFY.md | 上游 pin 记录与升级入口 | 引入/升级上游时 |
+| THIRD_PARTY_CODE.md | 第三方代码 License 登记 | 引入第三方代码时 |
+| THIRD_PARTY_ASSETS.md | 第三方资产逐项登记 | 引入第三方资产时 |
 
 ## 派生缓存
 

@@ -8,6 +8,14 @@
 
 ## Unreleased
 
+### Phase 0 — 冻结、建档与首次推送（V4 融合重构启动）
+
+- chore: git init（main），初始提交 AI-OS(4) 治理基线（bbadbe0），推送 origin（git@github.com:xingyuan-168/Claw3D-DSH.git）；`archive/cq-os` 分支标记 CQ 快照（baseline-import tag）。
+- docs: upstream/ 三份 pin（DSH c291e79 / 0.1.1-rc.2、Claw3D 0565b78、archify a07fa1d + @tt-a1i/archify-dsh@0.1.0，均 SSH 验证）。
+- docs: THIRD_PARTY_NOTICES.md 拆分为 THIRD_PARTY_CODE.md + THIRD_PARTY_ASSETS.md（CQ-OS MIT 通知保留）。
+- chore: governance/policy.yaml 单一事实源（§47）、docs/architecture/manifest.yaml、.aios/artifacts/archify/ 目录约定（HTML gitignore）。
+- 环境事实：github.com HTTPS 不通，上游操作一律 SSH；git 身份暂用 xingyuan-168 + noreply 邮箱（repo-local）。
+
 ### governance-core 审计修复（fix/governance-hardening）
 
 - fix(gates): Code Start 强制 GitHub remote + 复制式脏乱判定；开源调研文档要求 requirement_id 开头并给出 summary 与 Decision/reason，空模板/stale id/缺 reason 均阻塞，无布尔绕过。
