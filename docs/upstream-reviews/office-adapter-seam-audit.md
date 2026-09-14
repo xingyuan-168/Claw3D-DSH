@@ -38,6 +38,12 @@ RPC 方法面（27 个）：agents.list/create/update/delete、agents.files.get/
 - DSH 桥接：adapter 以 `approval/request` waterfall **answerer** 身份挂载（仅在 office 在线时认领，否则 next() 交给其他 answerer / fail-closed）；parked → requested 帧；resolve RPC / signal abort（→'cancelled'，不广播 resolved，office 按 expiresAtMs 过期）；allow-always 降级为 allowed-once（DSH 无持久授权，持久许可归治理策略）。
 - presence 形状实证：`runtimeEventBridge.ts` byAgent = `[{agentId, recent:[...]}]`，`gatewayPresence.ts` 按 agentId 取 recent——adapter 的真实 activity 跟踪输出与此一致。
 
+## 3B. office upstream 指向 DSH 的配置路径（已核实）
+
+- `gateway-proxy.js:333` 按**原样** `new WebSocket(upstreamUrl)` 拨号（路径保留），upstream URL 来自 studio 设置（`loadUpstreamGatewaySettings(process.env)`，默认 `ws://localhost:18789`，环境变量可覆盖）。
+- 指向 DSH：把 office 的 gateway URL 设为 `ws://127.0.0.1:<DSH端口>/api/gateway/ws`（adapter 在 DSH webserver 上注册的 exact-path upgrade 路由）；adapterType 保持非 openclaw 分支即无需 token 握手（`requiresToken = adapterType === "openclaw"`）。
+- 生产模式 `UPSTREAM_ALLOWLIST` 需含 DSH 主机名（127.0.0.1/localhost）。
+
 ## 4. 验收路径（Phase 3 收口）
 
 同时启动多个 DSH Agent → Office 出现多个不同真实 Agent；Agent 完成 → UI 状态同步变化。前置：adapter live + office dev server + 多会话驱动。
