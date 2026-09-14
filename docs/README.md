@@ -1,6 +1,6 @@
 # 文档索引
 
-AI Engineering OS 是 Codex 的工程治理层。本目录只保存当前正确的实现事实；Git 历史是唯一归档。
+AI Engineering OS 是 DeepSeek Harness（DSH）的工程治理层。本目录只保存当前正确的实现事实；Git 历史是唯一归档。
 
 ## 阅读顺序
 
@@ -38,4 +38,4 @@ AI Engineering OS 是 Codex 的工程治理层。本目录只保存当前正确�
 
 ## 派生缓存
 
-`.codex-os/context/PROJECT_CONTEXT.md` 由 `codex-os` 重新生成，可随时重建，永不作为事实源、永不手工编辑。
+`.aios/context/PROJECT_CONTEXT.md` 由 `aios` 重新生成，可随时重建，永不作为事实源、永不手工编辑。

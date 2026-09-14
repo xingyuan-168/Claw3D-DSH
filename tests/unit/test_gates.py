@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from codex_ai_os.core.gates import (
+from ai_engineering_os.core.gates import (
     evaluate_code_start,
     evaluate_finish,
     evaluate_frontend,
@@ -395,7 +395,7 @@ def test_finish_without_test_command_still_checks_the_rest(tmp_path: Path) -> No
 
 
 def _initialized_finish_project(tmp_path: Path) -> None:
-    from codex_ai_os.application.project import ProjectInitializer
+    from ai_engineering_os.application.project import ProjectInitializer
 
     ProjectInitializer().initialize(
         tmp_path,

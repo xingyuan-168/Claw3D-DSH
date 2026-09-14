@@ -1,6 +1,6 @@
 # Memory 契约
 
-双层存储：Git 跟踪的 `docs/memory/memory.jsonl` 是唯一事实源；SQLite `memory_index` 表只是本机可重建的搜索索引（`codex-os memory reindex` 重建）。
+双层存储：Git 跟踪的 `docs/memory/memory.jsonl` 是唯一事实源；SQLite `memory_index` 表只是本机可重建的搜索索引（`aios memory reindex` 重建）。
 
 ## 记录类型与状态
 
@@ -13,8 +13,8 @@
 
 ## 单写者规则
 
-- 子 Agent 不直接写 JSONL（Hook 在 disposable worktree 内拦截 docs/memory/ 写入）；用 `memory_record(candidate=true)` 或 `codex-os memory record --candidate` 提交 candidate 到 `.codex-os/state/memory-candidates/`。
-- 主会话用 `codex-os memory candidate <id> --accept|--reject` 或 MCP `memory_candidate` 处理 candidate：accept 校验后并入 JSONL 并 reindex，reject 直接丢弃；Finish 时 Finish Gate 会提醒尚未处理的 candidate（非阻塞）。
+- 子 Agent 不直接写 JSONL（Hook 在 disposable worktree 内拦截 docs/memory/ 写入）；用 `memory_record(candidate=true)` 或 `aios memory record --candidate` 提交 candidate 到 `.aios/state/memory-candidates/`。
+- 主会话用 `aios memory candidate <id> --accept|--reject` 或 MCP `memory_candidate` 处理 candidate：accept 校验后并入 JSONL 并 reindex，reject 直接丢弃；Finish 时 Finish Gate 会提醒尚未处理的 candidate（非阻塞）。
 
 ## 写入时机
 

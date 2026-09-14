@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from codex_ai_os.infrastructure.database import Database
-from codex_ai_os.infrastructure.memory import MemoryStore, MemoryStoreError
+from ai_engineering_os.infrastructure.database import Database
+from ai_engineering_os.infrastructure.memory import MemoryStore, MemoryStoreError
 
 
 def _store(tmp_path: Path) -> MemoryStore:

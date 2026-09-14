@@ -1,12 +1,12 @@
 # Worktree 协议
 
-AIOS 不创建、调度或管理 Agent；Codex 主会话负责规划与拆分，必要时调用原生子 Agent。AIOS 只负责把并行写隔离在登记的 disposable worktree 里。
+AIOS 不创建、调度或管理 Agent；DSH 主会话负责规划与拆分，必要时调用原生 Agent/Subagent。AIOS 只负责把并行写隔离在登记的 disposable worktree 里。
 
 ## 四能力（core/worktree.py）
 
-`prepare(task) / check(task) / finish(task) / cleanup(task)`（外加 list）。MCP `worktree_manage` 与 CLI `codex-os worktree ...` 暴露同一实现。
+`prepare(task) / check(task) / finish(task) / cleanup(task)`（外加 list）。MCP `worktree_manage` 与 CLI `aios worktree ...` 暴露同一实现。
 
-- Worktree 位于 `.worktrees/<slug>`，分支 `codex/wt-<slug>`，目标分支登记为 `target_branch`（默认 main）。
+- Worktree 位于 `.worktrees/<slug>`，分支 `aios/wt-<slug>`，目标分支登记为 `target_branch`（默认 main）。
 - `prepare` 登记进 SQLite worktrees 表；只有登记的真实 worktree（SQLite 记录 + cwd realpath 包含 + `git worktree list` 佐证）被 Hook 视为 disposable，伪造的 `.worktrees/` 目录失败封闭。
 - disposable 区内：上下文感知命令放行；主工作区拦截。
 - `finish` 要求 worktree 干净（全部已提交），否则拒绝——子 Agent 工作绝不丢失；finish 只把状态置为 `ready`（ready ≠ merged）。

@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from codex_ai_os.infrastructure.database import Database
+from ai_engineering_os.infrastructure.database import Database
 
 
 def test_migrate_is_idempotent(tmp_path: Path) -> None:
@@ -25,7 +25,7 @@ def test_expected_tables_exist(tmp_path: Path) -> None:
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
-    assert {"schema_migrations", "tasks", "approvals", "worktrees", "memory_index"} <= names
+    assert {"schema_migrations", "worktrees", "memory_index"} <= names
 
 
 def test_legacy_database_is_exported_and_rebuilt(tmp_path: Path) -> None:
@@ -49,4 +49,4 @@ def test_legacy_database_is_exported_and_rebuilt(tmp_path: Path) -> None:
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
     assert "projects" not in tables
-    assert "tasks" in tables
+    assert "worktrees" in tables

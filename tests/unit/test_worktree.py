@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from codex_ai_os.core.worktree import WorktreeError, WorktreeManager
-from codex_ai_os.infrastructure.database import Database
+from ai_engineering_os.core.worktree import WorktreeError, WorktreeManager
+from ai_engineering_os.infrastructure.database import Database
 
 
 def _git_repo(root: Path) -> None:
@@ -21,7 +21,7 @@ def _git_repo(root: Path) -> None:
 
 
 def _manager(root: Path) -> WorktreeManager:
-    database = Database(root / ".codex-os" / "state.db")
+    database = Database(root / ".aios" / "state.db")
     database.migrate()
     return WorktreeManager(root, database=database)
 
@@ -34,16 +34,17 @@ def _commit_all(root: Path, message: str) -> None:
 def test_prepare_check_finish_cleanup_cycle(tmp_path: Path) -> None:
     _git_repo(tmp_path)
     manager = _manager(tmp_path)
-    record = manager.prepare(name="demo", task_id="TASK-1")
+    record = manager.prepare(name="demo", dsh_session_id="SESS-1", dsh_agent_id="AGENT-1")
     assert record.name == "demo"
-    assert record.branch == "codex/wt-demo"
+    assert record.branch == "aios/wt-demo"
     assert record.status == "active"
     assert record.target_branch == "main"
     assert (tmp_path / ".worktrees" / "demo").is_dir()
     assert len(manager.list()) == 1
 
     checked = manager.check(name="demo")
-    assert checked.task_id == "TASK-1"
+    assert checked.dsh_session_id == "SESS-1"
+    assert checked.dsh_agent_id == "AGENT-1"
 
     finished = manager.finish(name="demo")
     assert finished.status == "ready"
@@ -90,7 +91,7 @@ def test_cleanup_refuses_unmerged_then_allows_after_merge(tmp_path: Path) -> Non
     assert (tmp_path / ".worktrees" / "feat").exists()
 
     subprocess.run(
-        ["git", "merge", "-q", "--no-ff", "-m", "merge feature", "codex/wt-feat"],
+        ["git", "merge", "-q", "--no-ff", "-m", "merge feature", "aios/wt-feat"],
         cwd=tmp_path,
         check=True,
     )

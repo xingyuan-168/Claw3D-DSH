@@ -5,7 +5,7 @@
 1. 目标测试（narrowest mapped tests）。
 2. `ruff check src plugins`。
 3. `git diff --check`。
-4. 仓库卫生 `codex-os check .`。
+4. 仓库卫生 `aios check .`。
 5. 必要时 pyright（schema/公共 API 变更）。
 
 另加仓库 Secret Scan：detect-secrets 只扫本次修改（增量 `scan_file` 循环脚本，见 AGENTS.md Git 提交纪律）。

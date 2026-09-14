@@ -3,9 +3,9 @@ requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [project]
-name = "codex-ai-engineering-os"
+name = "ai-engineering-os"
 version = "1.0.0"
-description = "Codex engineering governance layer: three stateless gates, worktrees, and memory"
+description = "DeepSeek Harness engineering governance layer: stateless gates, worktree isolation, engineering memory"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-codex-os = "codex_ai_os.cli.app:main"
+aios = "ai_engineering_os.cli.app:main"
 
 [dependency-groups]
 dev = [
@@ -29,11 +29,11 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/codex_ai_os"]
+packages = ["src/ai_engineering_os"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/codex_ai_os",
+  "src/ai_engineering_os",
   "tests",
   "docs",
   "plugins",
@@ -45,7 +45,7 @@ include = [
   ".gitignore",
 ]
 exclude = [
-  ".codex-os",
+  ".aios",
   ".worktrees",
   "dist",
   ".venv",
@@ -61,7 +61,7 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
-source = ["codex_ai_os"]
+source = ["ai_engineering_os"]
 
 [tool.ruff]
 line-length = 100
@@ -71,7 +71,7 @@ target-version = "py312"
 select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/codex_ai_os/templates/*.py" = ["E501", "RUF001"]
+"src/ai_engineering_os/templates/*.py" = ["E501", "RUF001"]
 
 [tool.pyright]
 include = ["src", "tests"]

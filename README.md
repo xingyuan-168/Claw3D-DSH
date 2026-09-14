@@ -1,6 +1,6 @@
 # AI Engineering OS
 
-AI Engineering OS 是 Codex 的**工程治理层**：无状态三 Gate（Code Start / Frontend Approval / Finish）在任务开始、前端实现前、任务结束时回答"允许 / 不允许及为什么"。它不指导 Codex 怎么做专业工作——理解仓库、编码、调试、构建、测试、子 Agent 调度都是 Codex 的原生能力。
+AI Engineering OS 是 DeepSeek Harness（DSH）的**工程治理层**：无状态三 Gate（Code Start / Frontend Approval / Finish）在任务开始、前端实现前、任务结束时回答"允许 / 不允许及为什么"。它不指导 DSH 怎么做专业工作——理解仓库、编码、调试、构建、测试、Agent/Subagent 调度都是 DSH 的原生能力。
 
 ## 能力
 
@@ -18,19 +18,19 @@ AI Engineering OS 是 Codex 的**工程治理层**：无状态三 Gate（Code St
 uv sync
 uv run ruff check src plugins tests
 uv run pytest
-uv run codex-os doctor --json
+uv run aios doctor --json
 ```
 
 ## 命令
 
 ```text
-codex-os init <project-root> --project-id PROJECT-001 --name example
-codex-os check <project-root> [--change-class --requirement-id]
-codex-os finish <project-root> --test-command "pytest" --memory-not-needed
-codex-os memory search|record|reindex|candidates|candidate --accept|--reject
-codex-os worktree prepare|check|finish|cleanup|list
-codex-os doctor
-codex-os mcp
+aios init <project-root> --project-id PROJECT-001 --name example
+aios check <project-root> [--change-class --requirement-id]
+aios finish <project-root> --test-command "pytest" --memory-not-needed
+aios memory search|record|reindex|candidates|candidate --accept|--reject
+aios worktree prepare|check|finish|cleanup|list
+aios doctor
+aios mcp
 ```
 
 业务命令支持 --json（统一 ok/error envelope）。MCP 公开 8 个工具：project_init、governance_check、approval_record、context_refresh、worktree_manage、memory_search、memory_record、memory_candidate。

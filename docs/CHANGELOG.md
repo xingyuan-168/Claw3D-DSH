@@ -8,6 +8,15 @@
 
 ## Unreleased
 
+### Phase 1 — AI OS DSH-only 清理（refactor: breaking）
+
+- refactor(rename): `codex_ai_os→ai_engineering_os`、CLI `codex-os→aios`、`.codex-os→.aios`、branch 前缀 `aios/wt-*`；pyproject 更名 `ai-engineering-os` + DSH 描述（ADR-0017）。
+- refactor(host): 删除 Codex 宿主协议——`plugins/ai-engineering-os`（.codex-plugin/hooks/.mcp.json/launch_mcp.cmd）、`.codex/`、`.cq/`（已归档 `archive/cq-os`）、`hook_gateway.py`、CLI `authorize-hook`；Skills 迁至根 `skills/`，8 个 SKILL.md DSH 化，移除 legacy agents/openai.yaml；DSH 插件集成测试于 Phase 2 重建（ADR-0017 §4）。
+- feat(db): schema 0001 瘦身为 worktrees（+dsh_session_id/dsh_agent_id 追踪列）+ memory_index（ADR-0023）；旧库自动导出重建。CLI/MCP worktree 参数 `--task-id`→`--dsh-session-id/--dsh-agent-id`。
+- refactor(approval): 删除 approvals 表与写路径；MCP `approval_record`→`frontend_approval_record`，只写 `docs/design/UI_SPEC.md` 审批工程事实；runtime approval 归 DSH（V4 §9）。
+- chore(doctor): `codex` CLI 检查→`dsh`（可选）；移除 plugin-hooks 检查与 tasks 表路径检查。
+- docs: AGENTS.md 首条 DSH 化 + 最高优先级「DSH-first」规则；ARCHITECTURE/API_SPEC/REQUIREMENTS/SCOPE/WORKTREE/README 同步；新增 ADR-0017/0018/0023。
+
 ### Phase 0 — 冻结、建档与首次推送（V4 融合重构启动）
 
 - chore: git init（main），初始提交 AI-OS(4) 治理基线（bbadbe0），推送 origin（git@github.com:xingyuan-168/Claw3D-DSH.git）；`archive/cq-os` 分支标记 CQ 快照（baseline-import tag）。
@@ -27,11 +36,3 @@
 - refactor(config): ProjectConfig 只保留运行时读取的字段（project_type 驱动模板，新增 code_paths），risk_level/环境/执行策略字段与 .codex/agents 角色档案删除。
 - chore(repo): 删除 .codex-os/gates、environment.yaml、execution-policy.yaml、test-traceability.yaml；secret 扫描脚本晋升 scripts/secret_scan_incremental.py；.gitignore 合规检查（15 项运行时产物，等价写法允许）。
 - docs: ADR 0001/0003/0009 随被删运行时退役；AGENTS.md/README/API_SPEC/GOVERNANCE_RULES/WORKTREE/MEMORY/DATABASE/TEST_PLAN/ARCHITECTURE 同步。
-
-### governance-core 第二轮审计加固（fix/aios3-hardening）
-
-- fix(gates): 开源调研事实增加 scope（行内/块列表）与 updated_at（YYYY-MM-DD）必填校验。
-- feat(finish): Code Start 第二层复核——未提交/已暂存改动触及 code_paths 时必须携带 --change-class（研究类另需 --requirement-id）复跑 Code Start，间接写入（脚本生成源码）在完成时被拦截；无状态设计不变。
-- fix(frontend): approval 块持久化 approved_by（decided_by 传递），SQLite 仍只是索引。
-- docs(governance): AGENTS.md 收敛为十条宪法 + Git 节奏 + 原则化护栏，验证与实现边界细节下沉 GOVERNANCE_RULES；ADR-0010/0011/0015 标注部分 Superseded（只改状态行，不改历史正文）。
-- chore(repo): 删除 .codex-os/tmp 一次性编辑脚本与本地缓存残留。

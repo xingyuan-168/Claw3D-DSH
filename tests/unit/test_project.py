@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from codex_ai_os.application.project import ProjectInitializer
+from ai_engineering_os.application.project import ProjectInitializer
 
 
 def test_initialize_creates_baseline(tmp_path: Path) -> None:
@@ -14,7 +14,7 @@ def test_initialize_creates_baseline(tmp_path: Path) -> None:
         include=frozenset(),
     )
     for relative in (
-        ".codex-os/project.yaml",
+        ".aios/project.yaml",
         ".gitignore",
         "AGENTS.md",
         "README.md",
@@ -61,7 +61,7 @@ def test_initialize_is_idempotent(tmp_path: Path) -> None:
         project_type="generic",
         include=frozenset(),
     )
-    assert ".codex-os/project.yaml" not in second.created_paths
+    assert ".aios/project.yaml" not in second.created_paths
     assert "AGENTS.md" not in second.created_paths
     assert first.config.project_id == second.config.project_id
 
