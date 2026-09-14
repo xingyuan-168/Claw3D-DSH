@@ -17,7 +17,8 @@
 - docs: office-adapter-seam-audit.md —— Office 网关契约（27 RPC 方法 + presence/chat 事件帧）与 DSH 接缝实证（webServer.registerUpgrade、HostConnectionRpc、sessionProjections 快照面、approval seam）。
 - feat(plugin): @aios/dsh-office-adapter 0.1.0 —— 在 DSH webserver 原生承载 Office 网关协议（/api/gateway/ws upgrade 路由），agents.list/chat.history 从真实 sessions/surface 读取，未审计接缝显式 not_implemented（不造模拟数据）；已安装 profile 并经 --dump-config 验证组合。
 - feat(architecture): IR v2 —— office-adapter 组件入图（+1 组件、+2/-1 连线、边界更新），archify showcase validate 9/9 0 警告、evidence 11 引用核实（revision 73f01bc）；**首个真实 Git base/head Delta**（e40d6d3→73f01bc，proofLevel revision-pinned，completeness complete，receipt 入库）。
-- feat: todo 投影——`todo/write` 事件实时跟踪 → `tasks.list` 只读映射（todo/in_progress/done，source openclaw_event）；tasks.create/update 显式 not_implemented（写路径归 Agent todo 工具，宪法第 1 条）；16/16 node:test。
+- feat: todo 投影——`todo/write` 事件实时跟踪 → `tasks.list` 只读映射（todo/in_progress/done，source openclaw_event）；tasks.create/update 显式 not_implemented（写路径归 Agent todo 工具，宪法第 1 条）。
+- feat(phases): V4 Phase 4 九态确定性折叠器（lib/states.js，规则表分类 tool/call + turn/end + approval + todo/write；相位变化广播 agent.phase）；回放两次 trace 相同 + 增量===全流测试；20/20 node:test。
 - 待续：多 Agent 活体验收（需 DSH 重启 + office dev server；Office 出现多个不同真实 Agent）。
 
 ### Phase 2A — Archify + Architecture Evidence 基线（feat）

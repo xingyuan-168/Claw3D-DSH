@@ -19,6 +19,7 @@
 import { WebSocketServer } from "ws";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 import { randomUUID } from "node:crypto";
+import { initialPhaseState, applyPhaseEvent } from "./states.js";
 
 export const name = "dsh-office-adapter";
 
@@ -209,6 +210,8 @@ export function createDispatch(ctx, broadcast = () => {}, approvals = null) {
   const pendingRuns = new Map();
   /** agentId -> { items, updatedAt } latest todo/write whole-list snapshot (live events only). */
   const todos = new Map();
+  /** agentId -> deterministic office phase fold state (V4 Phase 4). */
+  const phaseStates = new Map();
   let chatSeq = 0;
 
   const noteActivity = (session) => {
@@ -245,6 +248,13 @@ export function createDispatch(ctx, broadcast = () => {}, approvals = null) {
 
   const onSessionEvent = (session, event) => {
     noteActivity(session);
+    const phaseAgentId = String(session && session.id);
+    const prevPhase = phaseStates.get(phaseAgentId) ?? initialPhaseState();
+    const nextPhase = applyPhaseEvent(prevPhase, event);
+    phaseStates.set(phaseAgentId, nextPhase);
+    if (nextPhase.phase !== prevPhase.phase) {
+      broadcast({ type: "event", event: "agent.phase", payload: { agentId: phaseAgentId, phase: nextPhase.phase } });
+    }
     if (event && event.type === "todo/write") {
       const items = Array.isArray(event.todos) ? event.todos : (event.payload && Array.isArray(event.payload.todos) ? event.payload.todos : null);
       if (items) todos.set(String(session.id), { items, updatedAt: Date.now() });

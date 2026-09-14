@@ -241,3 +241,64 @@ test("dispatch: task writes stay not_implemented (write path belongs to the agen
   const updated = await io.dispatch("tasks.update", { id: "x", status: "done" }, "t3");
   assert.equal(updated.error.code, "not_implemented");
 });
+
+import { OFFICE_PHASES, classifyToolCall, initialPhaseState, applyPhaseEvent, replayPhaseStream } from "../lib/states.js";
+
+test("phases: classification table is content-based and deterministic", () => {
+  assert.equal(classifyToolCall("pwsh", JSON.stringify({ command: "npm run test" })), "test");
+  assert.equal(classifyToolCall("pwsh", JSON.stringify({ command: "npx eslint src" })), "review");
+  assert.equal(classifyToolCall("pwsh", JSON.stringify({ command: "git push origin main" })), "deploy");
+  assert.equal(classifyToolCall("pwsh", JSON.stringify({ command: "git push origin main --force" })), "coding");
+  assert.equal(classifyToolCall("read", "{}"), "research");
+  assert.equal(classifyToolCall("edit", "{}"), "coding");
+  assert.equal(classifyToolCall("totally-unknown", "{}"), null);
+});
+
+test("phases: recorded stream replayed twice yields identical animation trace", () => {
+  const recorded = [
+    { type: "turn/start", turn: 1 },
+    { type: "tool/call", name: "read", arguments: "{}", callId: "c1" },
+    { type: "tool/call", name: "edit", arguments: "{}", callId: "c2" },
+    { type: "todo/write", todos: [{ content: "a", status: "completed" }, { content: "b", status: "pending" }] },
+    { type: "approval/asked", id: "ap1", toolName: "pwsh" },
+    { type: "approval/decided", id: "ap1", outcome: "allowed-once" },
+    { type: "tool/call", name: "pwsh", arguments: JSON.stringify({ command: "npm run test" }), callId: "c3" },
+    { type: "tool/call", name: "pwsh", arguments: JSON.stringify({ command: "git push origin main" }), callId: "c4" },
+    { type: "todo/write", todos: [{ content: "a", status: "completed" }, { content: "b", status: "completed" }] },
+    { type: "turn/end", turn: 1, reason: { kind: "completed" } },
+  ];
+  const runA = replayPhaseStream(recorded);
+  const runB = replayPhaseStream(recorded);
+  assert.deepEqual(runA.trace, runB.trace);
+  assert.equal(runA.state.phase, "done");
+  assert.ok(runA.trace.every((phase) => OFFICE_PHASES.includes(phase)));
+  // the approval window and the resumed activity are both visible in the trace
+  assert.ok(runA.trace.includes("approval"));
+  assert.ok(runA.trace.includes("test"));
+  assert.ok(runA.trace.includes("deploy"));
+});
+
+test("phases: incremental apply equals whole-stream replay (associativity)", () => {
+  const events = [
+    { type: "turn/start", turn: 1 },
+    { type: "tool/call", name: "grep", arguments: "{}", callId: "c1" },
+    { type: "turn/end", turn: 1, reason: { kind: "error", error: { message: "x", code: "E" } } },
+  ];
+  let incremental = initialPhaseState();
+  for (const event of events) incremental = applyPhaseEvent(incremental, event);
+  const { state } = replayPhaseStream(events);
+  assert.deepEqual(incremental, state);
+  assert.equal(state.phase, "blocked");
+});
+
+test("phases: adapter broadcasts agent.phase on phase transitions", async () => {
+  const { ctx } = makeCtx([{ id: "sess-p", header: { id: "sess-p" } }]);
+  const frames = [];
+  const io = createDispatch(ctx, (frame) => frames.push(frame));
+  io.onSessionEvent({ id: "sess-p" }, { type: "tool/call", name: "edit", arguments: "{}" });
+  io.onSessionEvent({ id: "sess-p" }, { type: "tool/call", name: "edit", arguments: "{}" });
+  const phaseFrames = frames.filter((f) => f.event === "agent.phase");
+  assert.equal(phaseFrames.length, 1, "only the transition broadcasts");
+  assert.equal(phaseFrames[0].payload.phase, "coding");
+  assert.equal(phaseFrames[0].payload.agentId, "sess-p");
+});

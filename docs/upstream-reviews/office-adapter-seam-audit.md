@@ -51,6 +51,13 @@ RPC 方法面（27 个）：agents.list/create/update/delete、agents.files.get/
 - 投影（只读）：adapter 挂主机级 `session/event`，实时跟踪每会话最新 `todo/write` 快照 → tasks.list 映射 pending→todo / in_progress→in_progress / completed→done，source 固定 `openclaw_event`（事件推导卡），assignedAgentId = 会话 id。限制：adapter 重启后历史 todo/write 不可见，须等下一次写入（与 approval 桥接同源限制）。
 - `tasks.create/update` 显式 not_implemented：任务写路径归 Agent 的 todo 工具（宪法第 1 条——DSH 已有能力不重复实现；office 侧写入会伪造第二真源）。
 
+## 3D. 9 态确定性状态机（Phase 4，2026-09-14）
+
+- 实现：`packages/dsh-office-adapter/lib/states.js` —— 纯折叠器 `applyPhaseEvent`/`replayPhaseStream`，9 相位 `coding|research|plan|test|review|deploy|approval|blocked|done`（+idle 初始）。
+- 分类规则表（内容判定，确定性）：`tool/call` name+arguments → shell 测试命令→test、lint/typecheck→review、deploy/release/publish/git push→deploy（--force 显式回 coding）、edit/write/bash→coding、read/grep/web→research；`todo/write`→plan；`approval/asked`→approval（sticky 至 decided→回落 lastToolPhase）；`turn/end` completed→无未完 todo 则 done、否则保留活动相位，blocked/error/aborted/interrupted/max-tokens→blocked。
+- 接线：adapter `onSessionEvent` 逐事件折叠，**相位变化才**广播 `agent.phase {agentId, phase}`（客户端 runtimeEventPolicy 对未知事件安全忽略，Phase 4A 接可视化）。
+- 验收（V4 Phase 4）：录制事件流回放两次 → trace deepEqual 相同；增量折叠 === 全流重放（结合律测试）。20/20 node:test。
+
 ## 4. 验收路径（Phase 3 收口）
 
 同时启动多个 DSH Agent → Office 出现多个不同真实 Agent；Agent 完成 → UI 状态同步变化。前置：adapter live + office dev server + 多会话驱动。
