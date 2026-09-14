@@ -5,11 +5,11 @@ description: Apply the AI Engineering OS governance gates at task start, before 
 
 # Governance entry
 
-Run the three stateless gates through the `ai-engineering-os` MCP server (or the equivalent `aios` CLI commands). The gates answer "allowed / not allowed and why"; they never tell you how to do professional work.
+Run the three stateless gates through the DSH-native `aios_*` tools (or the equivalent `aios` CLI commands). The gates answer "allowed / not allowed and why"; they never tell you how to do professional work.
 
 ## Task start (Code Start Gate)
 
-1. Call `governance_check(stage="start", change_class=...)`.
+1. Call `aios_governance_check` (CLI: `aios check`) with the change class.
 2. Change classes that require recorded research: new_project, new_module, major_feature, new_stack, new_integration, mature_wheel_candidate. Exempt: bugfix, typo, tests_only, small_change.
 3. Without a reachable GitHub remote you may still read input/, analyze, research, plan, and write documents — but you must not start formal src/ implementation. Ask the user for the repository instead.
 4. The user's own uncommitted work never counts as dirt; only copy-style version directories/files, tracked pollution, and unresolved conflicts block.
@@ -26,4 +26,9 @@ Run the finish-checklist skill; call `governance_check(stage="finish", ...)` wit
 
 - Same input produces the same decision; if a gate blocks, fix the observable fact it names, then re-run.
 - Never bypass or fake a gate result; report blocks to the user instead.
-- Record user approvals with `approval_record` before treating frontend work as approved.
+- Record user approvals with `aios_frontend_approval_record` before treating frontend work as approved; runtime approvals stay in DSH.
+
+## Architecture Evidence (Archify, on demand)
+
+- Architecture-affecting work (new module, new stack, new integration, cross-boundary refactor) keeps the Typed JSON IR in `docs/architecture/*.json` as the source of truth and regenerates the rebuildable artifact via the pinned Archify skill; never hand-edit generated HTML.
+- Ordinary small changes (bugfix, typo, tests_only, small_change) never force Archify.

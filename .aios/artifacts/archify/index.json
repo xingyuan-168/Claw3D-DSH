@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "generator": {
+    "name": "@tt-a1i/archify-dsh",
+    "version": "0.1.0",
+    "core": "2.14",
+    "quality_profile": "showcase"
+  },
+  "artifacts": [
+    {
+      "id": "system",
+      "type": "architecture",
+      "source": "docs/architecture/system.architecture.json",
+      "artifact": ".aios/artifacts/archify/system.html",
+      "sourceRevision": "81279d199e9a92fcab0522134f44678aa096757f",
+      "validated": true
+    }
+  ]
+}

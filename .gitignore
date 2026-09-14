@@ -19,7 +19,8 @@ node_modules/
 .aios/cache/
 .aios/context/
 .aios/tmp/
-.aios/artifacts/
+.aios/artifacts/*
+!.aios/artifacts/archify/
 .worktrees/
 
 # Local secrets and editor state

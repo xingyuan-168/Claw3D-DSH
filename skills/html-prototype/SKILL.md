@@ -19,5 +19,5 @@ Requirement → user flow (may live in REQUIREMENTS/UI_SPEC) → interactive HTM
 ## Rules
 
 - The prototype is disposable scaffolding for review, not production code; the real implementation follows after approval.
-- Present the prototype to the user and record the explicit approval through `approval_record(gate="frontend")` before implementation starts (see frontend-design-review).
+- Present the prototype to the user and record the explicit approval through `aios_frontend_approval_record` before implementation starts (see frontend-design-review).
 - Exempt changes do not need a prototype; do not create ceremony for copy edits or CSS fixes.

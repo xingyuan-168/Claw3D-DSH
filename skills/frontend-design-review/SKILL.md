@@ -9,7 +9,7 @@ description: Gate substantive frontend implementation behind explicit user appro
 
 1. Verify `docs/design/PROTOTYPE.html` and `docs/design/UI_SPEC.md` exist and match the requirement.
 2. Ask the user to review the prototype in a browser and approve or reject it.
-3. Record the outcome: `approval_record(project_root, gate="frontend", subject="frontend", decision="approved"|"rejected", decided_by="user")`.
+3. Record the outcome: `aios_frontend_approval_record`（scope 精确；持久事实写 docs/design/UI_SPEC.md，runtime approval 归 DSH）.
 4. Call `governance_check(stage="frontend", frontend_impact=..., approved=true)`; implement only after it allows.
 
 ## Rules

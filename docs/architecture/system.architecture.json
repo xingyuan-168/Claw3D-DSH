@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Claw3D-DSH 融合仓库系统架构",
+    "subtitle": "三层合同：Claw3D（UI）→ DSH（唯一 Runtime）→ AI OS（治理）+ Archify（架构证据）",
+    "output": "system.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/xingyuan-168/Claw3D-DSH.git",
+      "revision": "81279d199e9a92fcab0522134f44678aa096757f"
+    },
+    "views": [
+      { "id": "runtime-path", "label": "运行时主链路", "focus": ["user", "claw3d", "dsh-core", "aios-core"], "note": "用户通过 3D UI 驱动 DSH 原生运行时；治理层只回答允许/不允许。" },
+      { "id": "governance-path", "label": "治理拦截链路", "focus": ["dsh-core", "governance-plugin", "aios-core", "aios-db"], "note": "tools/pre-execute 瀑布事件进入治理插件，经 policy.yaml 确定性判定 ALLOW/DENY/ASK。" },
+      { "id": "evidence-path", "label": "架构证据链路", "focus": ["dsh-core", "archify", "aios-core"], "note": "DSH 按需调用 Archify 生成架构证据；IR 在 Git，HTML 可重建。" }
+    ]
+  },
+  "components": [
+    { "id": "user", "type": "external", "label": "用户 / 开发者", "sublabel": "自然语言 + 审批", "pos": [40, 320], "size": [130, 64], "sources": [{ "path": "AGENTS.md" }] },
+    { "id": "claw3d", "type": "frontend", "label": "Claw3D Office", "sublabel": "3D UI（仅展示）", "pos": [250, 320], "size": [140, 64], "tag": "subtree", "sources": [{ "path": "upstream/CLAW3D.md" }] },
+    { "id": "dsh-core", "type": "backend", "label": "DeepSeek Harness", "sublabel": "唯一 Runtime（Cordis）", "pos": [480, 320], "size": [150, 64], "sources": [{ "path": "upstream/DSH.md" }] },
+    { "id": "governance-plugin", "type": "security", "label": "AIOS 治理插件", "sublabel": "pre-execute 拦截", "pos": [480, 150], "size": [150, 64], "tag": "@aios/dsh-governance", "sources": [{ "path": "packages/dsh-aios-governance/lib/index.js" }, { "path": "governance/policy.yaml" }] },
+    { "id": "aios-core", "type": "backend", "label": "AI Engineering OS", "sublabel": "三 Gate + Memory（Python）", "pos": [720, 320], "size": [150, 64], "sources": [{ "path": "src/ai_engineering_os/cli/app.py" }] },
+    { "id": "aios-db", "type": "database", "label": "SQLite 状态", "sublabel": ".aios/state（最小集）", "pos": [940, 320], "size": [130, 64], "sources": [{ "path": "src/ai_engineering_os/infrastructure/database.py" }] },
+    { "id": "ui-spec", "type": "database", "label": "UI_SPEC 审批事实", "sublabel": "docs/design/UI_SPEC.md", "pos": [720, 480], "size": [150, 64], "tag": "Frontend Gate", "sources": [{ "path": "docs/design/UI_SPEC.md" }] },
+    { "id": "archify", "type": "cloud", "label": "Archify", "sublabel": "架构证据（pinned 0.1.0）", "pos": [480, 480], "size": [150, 64], "sources": [{ "path": "upstream/ARCHIFY.md" }] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "主工作区（Git 单真源）", "wraps": ["claw3d", "dsh-core", "governance-plugin", "aios-core", "aios-db", "ui-spec", "archify"] }
+  ],
+  "connections": [
+    { "id": "user-to-claw3d", "from": "user", "to": "claw3d", "label": "3D 交互", "variant": "emphasis" },
+    { "id": "claw3d-to-dsh", "from": "claw3d", "to": "dsh-core", "label": "web channel", "variant": "emphasis" },
+    { "id": "dsh-governance", "from": "dsh-core", "to": "governance-plugin", "label": "tools/pre-execute", "variant": "security", "fromSide": "top", "toSide": "bottom" },
+    { "id": "governance-policy", "from": "governance-plugin", "to": "aios-core", "label": "aios CLI", "variant": "security" },
+    { "id": "dsh-aios", "from": "dsh-core", "to": "aios-core", "label": "aios_* tools", "labelDy": 24 },
+    { "id": "aios-db", "from": "aios-core", "to": "aios-db", "label": "worktrees 索引", "labelDy": 56 },
+    { "id": "aios-uispec", "from": "aios-core", "to": "ui-spec", "label": "approval record", "variant": "dashed", "labelDy": 24 },
+    { "id": "dsh-archify", "from": "dsh-core", "to": "archify", "label": "按需 Skill", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelDy": 24 }
+  ]
+}

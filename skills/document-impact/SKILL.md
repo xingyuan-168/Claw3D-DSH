@@ -17,4 +17,5 @@ Documentation is a fact source, not an essay collection. Update exactly the docu
 - One-line backend fix must not force a rewrite of ten documents.
 - `docs/memory/memory.jsonl` is runtime memory, not project documentation; it follows the memory-protocol skill.
 - Update documents in the same task as the change; the Finish gate checks `docs_synced` as a task fact you declare honestly.
-- `PROJECT_CONTEXT.md` is a derived cache — regenerate with `context_refresh`, never hand-edit it.
+- `PROJECT_CONTEXT.md` is a derived cache — regenerate with `aios_context_refresh`, never hand-edit it.
+- `docs/architecture/*.json` (Typed JSON IR) is a Git source of truth for architecture evidence; `.aios/artifacts/archify/` holds generated HTML plus `index.json` (derived, rebuildable). Update the IR in the same task as the architecture change.

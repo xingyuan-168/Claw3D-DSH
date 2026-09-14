@@ -8,6 +8,15 @@
 
 ## Unreleased
 
+### Phase 2A — Archify + Architecture Evidence 基线（feat）
+
+- feat: 安装 pinned `@tt-a1i/archify-dsh@0.1.0`（profile bundle；DSH skill-filesystem 挂载 archify skill，--dump-config 已验证组合，重启后按需可调用）。
+- feat(docs/architecture): system.architecture.json —— 本仓库真实 Typed JSON IR（showcase validate 9/9、evidence 9 引用全部核实、0 errors/0 warnings；IR 在 Git 为真源）。
+- feat: `.aios/artifacts/archify/` —— system.html 自包含 HTML（可重建，gitignore）+ index.json（§47AC 契约结构，CQ Office 唯一发现入口）。
+- docs(skills): governance-entry / document-impact / finish-checklist / open-source-research 接入架构证据规则（架构性变更要求 IR+artifact 更新；普通小修改豁免 Archify）；frontend-design-review / html-prototype 审批工具名同步 `aios_frontend_approval_record`。
+- docs: OPEN_SOURCE_RESEARCH.md 增 REQ-AF-1.0（Archify use 决策，pin core 2.14 / bundle 0.1.0）。
+- 待办：首个真实 Git base/head Architecture Delta 在 Phase 3 的 IR v2 变更时生成（空基线不满足 schema）。
+
 ### Phase 2 — DSH Governance Integration（feat）
 
 - docs: dsh-seam-audit.md——实证确认 tools/pre-execute（Waterfall，ALLOW/DENY/ASK）、approval/request 原生审批链、ctx.tools.register、systemPrompt.section、bundle patch 组合机制（docs/upstream-reviews/）。

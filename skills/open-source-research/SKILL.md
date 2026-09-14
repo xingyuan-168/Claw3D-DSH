@@ -41,5 +41,6 @@ What this requirement is.
 
 - One Decision section per requirement; the Code Start gate checks for it.
 - No supply-chain audits, SBOMs, or fixed field matrices for candidates you rejected.
-- Never introduce a second agent runtime (LangGraph, CrewAI, MetaGPT, OpenHands) as a dependency; DeepSeek Harness already provideslity.
+- Never introduce a second agent runtime (LangGraph, CrewAI, MetaGPT, OpenHands) as a dependency; DeepSeek Harness already provides that capability.
+- For pinned upstream capabilities (DSH, Archify, Claw3D), the research decision records the exact upstream version and the pin location (upstream/*.md); upgrades go through the Verified Stack process, never by silently bumping.
 - Cite URLs so the decision stays auditable.
